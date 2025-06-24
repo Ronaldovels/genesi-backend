@@ -2,16 +2,21 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import axios from 'axios';
+
+
 
 // Carrega variáveis de ambiente do .env
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const api = process.env.SELF_API_URL
 
 const allowedOrigins = [
   'http://localhost:8080',
-  'https://genesi-rev.vercel.app'
+  'https://genesi-rev.vercel.app',
+  'https://genesi-kvr1.vercel.app'
 ];
 
 const corsOptions = {
@@ -68,6 +73,15 @@ app.use('/api/webhook', webhookRoutes);
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+const keepAlive = () => {
+  axios.get(api)
+    .then(() => console.log(`[KEEP-ALIVE] Ping enviado para ${api}`))
+    .catch((error) => console.error('[KEEP-ALIVE] Erro ao pingar a API:', error.message));
+};
+
+// Executa o keepAlive a cada 5 minutos (300.000 ms)
+setInterval(keepAlive, 5 * 60 * 1000);
 
 // =============================================
 // OBJETIVO E DESCRIÇÃO DO ARQUIVO
