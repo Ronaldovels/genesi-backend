@@ -51,9 +51,9 @@ router.post('/register', async (req, res) => {
     // Criar a associação (AccountCategory) para cada categoria padrão
     for (const category of allCategories) {
       const newAccountCategory = new AccountCategory({
-        account: newAccount._id,
+        user: newUser._id, // <-- ADICIONE O ID DO USUÁRIO AQUI
         category: category._id,
-        limit: 0, // Inicia com limite 0
+        limit: 0,
         total_gasto: 0
       });
       await newAccountCategory.save();
