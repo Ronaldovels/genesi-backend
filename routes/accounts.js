@@ -1,6 +1,5 @@
 import express from 'express';
 import Account from '../models/Account.js';
-import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -20,33 +19,65 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
-// POST: Criar uma nova conta para um usuário
+// ALTERADO: Rota para criar contas subsequentes
 router.post('/', async (req, res) => {
+   const { userId } = req.body; // Apenas userId é necessário no corpo da requisição
+
+  if (!userId) {
+    return res.status(400).json({ message: 'ID do usuário é obrigatório.' });
+  }
+
   try {
-    const { userId, name } = req.body;
-    if (!userId || !name) {
-      return res.status(400).json({ message: 'ID do usuário e nome da conta são obrigatórios.' });
+    const userAccounts = await Account.find({ user: userId });
+
+    if (userAccounts.length >= 10) {
+      return res.status(400).json({ message: 'Limite de 10 contas por usuário atingido.' });
     }
 
-    const user = await User.findById(userId).populate('accounts');
-    if (!user) {
-      return res.status(404).json({ message: 'Usuário não encontrado.' });
-    }
+    const highestIndex = Math.max(...userAccounts.map(acc => acc.accountIndex));
+    const nextIndex = highestIndex + 1;
+    
+    // Define o nome automaticamente
+    const newAccountName = `Conta #${nextIndex}`;
 
-    // Limita a 2 contas por usuário
-    if (user.accounts.length >= 2) {
-      return res.status(400).json({ message: 'Limite de 2 contas por usuário atingido.' });
-    }
+    const newAccount = new Account({
+      user: userId,
+      name: newAccountName,
+      accountIndex: nextIndex
+    });
 
-    const newAccount = new Account({ user: userId, name });
     await newAccount.save();
-
-    user.accounts.push(newAccount._id);
-    await user.save();
-
     res.status(201).json(newAccount);
+
   } catch (error) {
-    console.error("Erro ao criar conta:", error);
+    console.error("Erro ao criar nova conta:", error);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
+// NOVO: Rota para ATUALIZAR o nome de uma conta
+router.put('/:accountId', async (req, res) => {
+  const { accountId } = req.params;
+  const { name } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ message: 'O novo nome é obrigatório.' });
+  }
+
+  try {
+    const updatedAccount = await Account.findByIdAndUpdate(
+      accountId,
+      { name: name },
+      { new: true } // Retorna o documento atualizado
+    );
+
+    if (!updatedAccount) {
+      return res.status(404).json({ message: 'Conta não encontrada.' });
+    }
+
+    res.json(updatedAccount);
+  } catch (error) {
+    console.error("Erro ao atualizar conta:", error);
     res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });
