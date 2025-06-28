@@ -38,7 +38,8 @@ router.post('/register', async (req, res) => {
 
     const newAccount = new Account({
       user: newUser._id,
-      name: 'Conta Principal'
+      name: 'Conta Principal',
+      accountIndex: 1 // ADICIONADO: Define o índice da primeira conta
     });
     await newAccount.save();
 
@@ -78,22 +79,22 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Email ou senha incorretos.' });
     }
-    
+
     // Gerar o Token
     const token = jwt.sign(
       { id: user._id, name: user.name },
       process.env.JWT_SECRET || 'fallbackSecret',
       { expiresIn: '1h' }
     );
-      
-    res.json({ 
-      message: 'Login realizado com sucesso!', 
+
+    res.json({
+      message: 'Login realizado com sucesso!',
       token,
-      user: { id: user._id, name: user.name, email: user.email, whatsapp: user.whatsapp } 
+      user: { id: user._id, name: user.name, email: user.email, whatsapp: user.whatsapp }
     });
-      
+
   } catch (err) {
-    console.error("Erro no login:", err); 
+    console.error("Erro no login:", err);
     res.status(500).json({ message: 'Erro no servidor.' });
   }
 });

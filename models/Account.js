@@ -15,7 +15,20 @@ const AccountSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  accountIndex: {
+    type: Number,
+    required: true
+  }
 }, { timestamps: true });
+
+// NOVO ÍNDICE: Garante que a combinação de 'user' e 'accountIndex' seja única.
+// Isso permite que o Usuário A tenha uma conta de index 1, e o Usuário B também,
+// mas o Usuário A não pode ter duas contas com index 1.
+AccountSchema.index({ user: 1, accountIndex: 1 }, { unique: true });
+
+
+
+
 
 const Account = mongoose.model('Account', AccountSchema);
 export default Account;
