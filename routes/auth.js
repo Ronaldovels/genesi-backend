@@ -5,6 +5,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Category from '../models/Category.js';
 import AccountCategory from '../models/AccountCategory.js';
+import InvestmentAccount from '../models/InvestmentAccount.js';
+
 
 const router = express.Router();
 
@@ -45,6 +47,14 @@ router.post('/register', async (req, res) => {
 
     newUser.accounts.push(newAccount._id);
     await newUser.save();
+
+    // NOVO: Cria a conta de investimentos padrão
+    const newInvestmentAccount = new InvestmentAccount({
+        user: newUser._id,
+        name: 'Carteira de Investimentos',
+        accountIndex: 1
+    });
+    await newInvestmentAccount.save();
 
     // Buscar todas as categorias padrão
     const allCategories = await Category.find({});
