@@ -1,36 +1,38 @@
 import mongoose from 'mongoose';
 
-const TransactionSchema = new mongoose.Schema({
+const transactionSchema = new mongoose.Schema({
   account: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
-  value: {
-    type: Number,
-    required: true
+    required: true,
   },
   type: {
     type: String,
     enum: ['entrada', 'saida'],
-    required: true
+    required: true,
   },
   date: {
-      type: Date,
-      default: Date.now
+    type: Date,
+    default: Date.now,
   },
+  value: {
+    type: Number,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  // NOVO CAMPO: Referência à categoria (opcional, pois entradas não têm)
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'AccountCategory',
-    required: false // Opcional
+    ref: 'Category', // Refere-se à coleção global de Categorias
+    required: false, 
   }
 }, { timestamps: true });
 
-const Transaction = mongoose.model('Transaction', TransactionSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
+
 export default Transaction;
 
 // =============================================

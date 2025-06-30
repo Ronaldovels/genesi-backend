@@ -9,7 +9,7 @@ const router = express.Router();
 // POST: Adicionar uma nova transação (entrada ou saída)
 router.post('/transaction', async (req, res) => {
   try {
-    const { accountId, type, date, value, description } = req.body;
+    const { accountId, type, date, value, description, categoryId } = req.body;
 
     if (!accountId || !type || !value || !description) {
       return res.status(400).json({ message: 'Dados da transação incompletos.' });
@@ -26,7 +26,8 @@ router.post('/transaction', async (req, res) => {
       type,
       date: date || new Date(),
       value,
-      description
+      description,
+      category: categoryId || null // ALTERADO: Salva o ID da categoria
     });
     await transaction.save();
 
@@ -52,25 +53,29 @@ router.get('/summary/:accountId', async (req, res) => {
       return res.status(400).json({ message: 'Mês e ano são obrigatórios.' });
     }
 
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    // ALTERADO: Usando Date.UTC para criar as datas sem influência do fuso horário.
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1)); // Aponta para o início do próximo mês
 
     // Calcula o total de entradas no período
     const entradas = await Transaction.aggregate([
-      { $match: { account: new mongoose.Types.ObjectId(accountId), type: 'entrada', date: { $gte: startDate, $lte: endDate } } },
+      // ALTERADO: Usamos $gte (maior ou igual a) para o início do mês
+      // e $lt (menor que) para o início do próximo mês. É mais preciso.
+      { $match: { account: new mongoose.Types.ObjectId(accountId), type: 'entrada', date: { $gte: startDate, $lt: endDate } } },
       { $group: { _id: null, total: { $sum: '$value' } } }
     ]);
 
     // Calcula o total de saídas no período
     const saidas = await Transaction.aggregate([
-        { $match: { account: new mongoose.Types.ObjectId(accountId), type: 'saida', date: { $gte: startDate, $lte: endDate } } },
-        { $group: { _id: null, total: { $sum: '$value' } } }
+      // ALTERADO: Mesma lógica para as saídas
+      { $match: { account: new mongoose.Types.ObjectId(accountId), type: 'saida', date: { $gte: startDate, $lt: endDate } } },
+      { $group: { _id: null, total: { $sum: '$value' } } }
     ]);
-    
+
     // Pega o saldo atual da conta
     const account = await Account.findById(accountId);
     if (!account) {
-        return res.status(404).json({ message: 'Conta não encontrada.' });
+      return res.status(404).json({ message: 'Conta não encontrada.' });
     }
 
     res.json({
@@ -89,14 +94,14 @@ router.get('/summary/:accountId', async (req, res) => {
 router.get('/transactions/:accountId', async (req, res) => {
   try {
     const { accountId } = req.params;
-    const { limit = 5 } = req.query; 
+    const { limit = 5 } = req.query;
 
-    const transactions = await Transaction.find({ 
+    const transactions = await Transaction.find({
       account: accountId,
       type: { $in: ['entrada', 'saida'] }
     })
       .sort({ date: -1 })
-      .limit(Number(limit)); 
+      .limit(Number(limit));
 
     res.json(transactions);
 
@@ -106,41 +111,54 @@ router.get('/transactions/:accountId', async (req, res) => {
   }
 });
 
-// GET: Obter o resumo de gastos por categoria para uma conta
+// DENTRO DE routes/financial.js
+
 router.get('/category-summary/:accountId', async (req, res) => {
   try {
     const { accountId } = req.params;
-    const account = await Account.findById(accountId).populate('user');
-    if (!account) {
-      return res.status(404).json({ message: 'Conta não encontrada.' });
+    const { month, year } = req.query; // NOVO: Lendo mês e ano da query
+
+    if (!month || !year) {
+      return res.status(400).json({ message: 'Mês e ano são obrigatórios para o resumo de categoria.' });
     }
-    const userId = account.user._id;
     
-    // 1. Obter todas as categorias associadas ao usuário
-    const userCategories = await AccountCategory.find({ user: userId }).populate('category');
+    // NOVO: Calculando o intervalo de datas em UTC
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1));
 
-    // 2. Para cada categoria, calcular o total de gastos (na conta específica)
-    const summary = await Promise.all(userCategories.map(async (userCategory) => {
-      const accountCategoryId = userCategory._id; 
-      
-      const result = await Transaction.aggregate([
-        { $match: { 
-            account: new mongoose.Types.ObjectId(accountId), 
-            category: accountCategoryId,
-            type: 'saida' 
-        }},
-        { $group: { 
-            _id: null, 
-            total: { $sum: '$value' } 
-        }}
-      ]);
+    const account = await Account.findById(accountId).populate('user');
+    if (!account) return res.status(404).json({ message: 'Conta não encontrada.' });
+    
+    const userId = account.user._id;
 
+    const userAccountCategories = await AccountCategory.find({ user: userId }).populate('category');
+
+    const spendingTotals = await Transaction.aggregate([
+      {
+        $match: {
+          account: new mongoose.Types.ObjectId(accountId),
+          type: 'saida',
+          category: { $exists: true, $ne: null },
+          date: { $gte: startDate, $lt: endDate } // NOVO: Filtro de data adicionado
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          totalSpent: { $sum: '$value' }
+        }
+      }
+    ]);
+
+    const summary = userAccountCategories.map(userCat => {
+      const spending = spendingTotals.find(s => s._id.toString() === userCat.category._id.toString());
       return {
-        name: userCategory.category.name,
-        total: result.length > 0 ? result[0].total : 0,
-        limit: userCategory.limit // Adicionando o limite na resposta
+        _id: userCat._id,
+        name: userCat.category.name,
+        total: spending ? spending.totalSpent : 0,
+        limit: userCat.limit
       };
-    }));
+    });
 
     res.json(summary);
 
@@ -150,7 +168,7 @@ router.get('/category-summary/:accountId', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;
 
 
 
