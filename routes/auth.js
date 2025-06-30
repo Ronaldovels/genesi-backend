@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
       const newAccountCategory = new AccountCategory({
         user: newUser._id, // <-- ADICIONE O ID DO USUÁRIO AQUI
         category: category._id,
-        limit: 0,
+        limit: 1000,
         total_gasto: 0
       });
       await newAccountCategory.save();
