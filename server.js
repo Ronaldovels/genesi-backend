@@ -91,14 +91,14 @@ app.listen(PORT, () => {
   startScheduler();
 });
 
-/*const keepAlive = () => {
+const keepAlive = () => {
   axios.get(api)
     .then(() => console.log(`[KEEP-ALIVE] Ping enviado para ${api}`))
     .catch((error) => console.error('[KEEP-ALIVE] Erro ao pingar a API:', error.message));
 };
 
 // Executa o keepAlive a cada 5 minutos (300.000 ms)
-setInterval(keepAlive, 5 * 60 * 1000);*/
+setInterval(keepAlive, 5 * 60 * 1000);
 
 // =============================================
 // OBJETIVO E DESCRIÇÃO DO ARQUIVO
