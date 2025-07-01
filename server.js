@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import axios from 'axios';
-
+import { startScheduler } from './services/transactionScheduler.js';
 
 
 // Carrega variáveis de ambiente do .env
@@ -12,6 +12,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const api = process.env.SELF_API_URL
+
+
 
 const allowedOrigins = [
   'http://localhost:8080',
@@ -78,8 +80,15 @@ app.use('/api/investment', investmentRoutes)
 import projectsRoutes from './routes/projects.js'
 app.use('/api/projects', projectsRoutes)
 
+import recurringExpensesRoutes from './routes/recurringexpenses.js';
+app.use('/api/recurring-expenses', recurringExpensesRoutes);
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
+
+
+
+  startScheduler();
 });
 
 /*const keepAlive = () => {
