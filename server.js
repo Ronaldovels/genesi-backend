@@ -38,7 +38,7 @@ const corsOptions = {
 // Middlewares
 // Habilita o pre-flight para todas as rotas
 app.options('*', cors(corsOptions));
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
 // Conexão com o MongoDB
