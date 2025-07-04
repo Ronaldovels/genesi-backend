@@ -23,7 +23,7 @@ const allowedOrigins = [
   'http://192.168.15.7:8080'
 ];
 
-const corsOptions = {
+/*const corsOptions = {
   origin: (origin, callback) => {
     // Permite requisições sem 'origin' (como Postman) ou de origens na lista
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -33,11 +33,11 @@ const corsOptions = {
     }
   },
   credentials: true,
-};
+};*/
 
 // Middlewares
 // Habilita o pre-flight para todas as rotas
-app.options('*', cors(corsOptions));
+//app.options('*', cors(corsOptions));
 app.use(cors());
 app.use(express.json());
 
