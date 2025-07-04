@@ -1,4 +1,4 @@
-import RecurringExpense from '../models/recurringExprense.js';
+import RecurringExpense from '../models/RecurringExpense.js';
 
 // @desc    Criar uma nova despesa programada
 // @route   POST /api/recurring-expenses

@@ -1,8 +1,8 @@
 import cron from 'node-cron';
-import RecurringExpense from '../models/recurringExprense.js';
+import RecurringIncome from '../models/RecurringIncome.js';
+import RecurringExpense from '../models/RecurringExpense.js';
 import Transaction from '../models/Transaction.js';
 import Account from '../models/Account.js';
-import mongoose from 'mongoose';
 
 /**
  * Verifica e processa as despesas programadas que vencem no dia atual.
@@ -87,19 +87,86 @@ const processDailyRecurringExpenses = async () => {
 };
 
 /**
+ * NOVO: Processa as ENTRADAS programadas que vencem no dia atual.
+ */
+const processDailyRecurringIncomes = async () => {
+  console.log('[Scheduler] Verificando ENTRADAS programadas do dia...');
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); 
+  const currentDay = today.getDate();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  try {
+    const incomesDueToday = await RecurringIncome.find({ billingDay: currentDay });
+
+    if (incomesDueToday.length === 0) {
+      console.log('[Scheduler] Nenhuma entrada com vencimento hoje.');
+      return;
+    }
+
+    for (const income of incomesDueToday) {
+      const startOfMonth = new Date(currentYear, currentMonth, 1);
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0);
+
+      const existingTransaction = await Transaction.findOne({
+        account: income.account,
+        description: `Entrada Automática: ${income.name}`,
+        date: { $gte: startOfMonth, $lte: endOfMonth },
+      });
+
+      if (existingTransaction) {
+        console.log(`[Scheduler] Entrada "${income.name}" já processada este mês. Ignorando.`);
+        continue;
+      }
+
+      console.log(`[Scheduler] Processando entrada: ${income.name}`);
+      const account = await Account.findById(income.account);
+      if (!account) continue;
+
+      const newTransaction = new Transaction({
+        account: income.account,
+        type: 'entrada', // O tipo é 'entrada'
+        date: new Date(),
+        value: income.value,
+        description: `Entrada Automática: ${income.name}`,
+        // Entradas não têm categoria
+      });
+      await newTransaction.save();
+
+      account.balance += income.value; // Adiciona ao saldo
+      await account.save();
+
+      console.log(`[Scheduler] Transação de entrada para "${income.name}" criada com sucesso!`);
+    }
+
+  } catch (error) {
+    console.error('[Scheduler] Erro ao processar entradas programadas:', error);
+  }
+};
+
+
+/**
  * Inicia o agendador de tarefas.
- * A tarefa será executada todos os dias às 02:00 da manhã.
- * O formato cron é: 'minuto hora dia-do-mês mês dia-da-semana'
  */
 export const startScheduler = () => {
-  // '0 2 * * *' -> Executa todo dia às 2 da manhã.
-  cron.schedule('0 2 * * *', processDailyRecurringExpenses, {
+  // Executa todo dia às 02:05 da manhã (um pouco depois das despesas)
+  cron.schedule('5 2 * * *', async () => {
+    console.log('[Scheduler] Iniciando verificação diária de transações programadas...');
+    await processDailyRecurringExpenses();
+    await processDailyRecurringIncomes(); // NOVO: Chama a função de entradas
+    console.log('[Scheduler] Verificação diária de transações programadas concluída.');
+  }, {
     scheduled: true,
     timezone: "America/Sao_Paulo"
   });
 
-  console.log('[Scheduler] Agendador de transações iniciado. Próxima execução às 02:00.');
+  console.log('[Scheduler] Agendador de transações iniciado. Próxima execução às 02:05.');
 
-  // Opcional: Executar uma vez ao iniciar o servidor para testes
-  // processDailyRecurringExpenses();
+
+  /*console.log('[Scheduler] Executando verificação inicial para fins de teste...');
+  processDailyRecurringExpenses();
+  processDailyRecurringIncomes();*/
+
 };

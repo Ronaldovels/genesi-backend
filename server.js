@@ -83,6 +83,10 @@ app.use('/api/projects', projectsRoutes)
 import recurringExpensesRoutes from './routes/recurringexpenses.js';
 app.use('/api/recurring-expenses', recurringExpensesRoutes);
 
+import recurringIncomeRoutes from './routes/recurringincome.js';
+app.use('/api/recurring-incomes', recurringIncomeRoutes)
+
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 
@@ -91,14 +95,14 @@ app.listen(PORT, () => {
   startScheduler();
 });
 
-const keepAlive = () => {
+/*const keepAlive = () => {
   axios.get(api)
     .then(() => console.log(`[KEEP-ALIVE] Ping enviado para ${api}`))
     .catch((error) => console.error('[KEEP-ALIVE] Erro ao pingar a API:', error.message));
 };
 
 // Executa o keepAlive a cada 5 minutos (300.000 ms)
-setInterval(keepAlive, 5 * 60 * 1000);
+setInterval(keepAlive, 5 * 60 * 1000);*/
 
 // =============================================
 // OBJETIVO E DESCRIÇÃO DO ARQUIVO
