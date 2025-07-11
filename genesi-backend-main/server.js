@@ -7,7 +7,7 @@ import { startScheduler } from './services/transactionScheduler.js';
 
 
 // Carrega variáveis de ambiente do .env
-dotenv.config();
+dotenv.config(); console.log('MONGODB_URI:', process.env.MONGODB_URI);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -86,6 +86,12 @@ app.use('/api/recurring-expenses', recurringExpensesRoutes);
 import recurringIncomeRoutes from './routes/recurringincome.js';
 app.use('/api/recurring-incomes', recurringIncomeRoutes)
 
+// Nova rota para perguntas com áudio
+import askRoutes from './routes/ask.js';
+app.use('/api/perguntar', askRoutes);
+
+import accountRoutes from './routes/account.js';
+app.use('/api/accounts', accountRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

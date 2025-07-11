@@ -82,6 +82,30 @@ router.put('/:accountId', async (req, res) => {
   }
 });
 
+
+// NOVO: Buscar conta por userId + name OU userId + accountIndex
+router.post('/find', async (req, res) => {
+  const { user, name, accountIndex } = req.body;
+  if (!user) {
+    return res.status(400).json({ message: 'ID do usuário é obrigatório.' });
+  }
+
+  let query = { user };
+  if (name) query.name = new RegExp(`^${name}$`, 'i');
+  if (accountIndex) query.accountIndex = accountIndex;
+
+  try {
+    const account = await Account.findOne(query);
+    if (!account) {
+      return res.status(404).json({ message: 'Conta não encontrada.' });
+    }
+    res.json(account);
+  } catch (error) {
+    console.error("Erro ao buscar conta:", error);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
 export default router;
 
 // =============================================
