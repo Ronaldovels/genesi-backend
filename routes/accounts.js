@@ -84,13 +84,22 @@ router.put('/:accountId', async (req, res) => {
 
 
 // NOVO: Buscar conta por userId + name OU userId + accountIndex
+import User from '../models/User.js'; 
+
 router.post('/find', async (req, res) => {
   const { user, name, accountIndex } = req.body;
   if (!user) {
-    return res.status(400).json({ message: 'ID do usuário é obrigatório.' });
+    return res.status(400).json({ message: 'ID do usuário (whatsapp) é obrigatório.' });
   }
 
-  let query = { user };
+  // 1. Busca o usuário pelo WhatsApp
+  const userDoc = await User.findOne({ whatsapp: user });
+  if (!userDoc) {
+    return res.status(404).json({ message: 'Usuário não encontrado.' });
+  }
+
+  // 2. Monta a query da conta usando o _id do usuário
+  let query = { user: userDoc._id };
   if (name) query.name = new RegExp(`^${name}$`, 'i');
   if (accountIndex) query.accountIndex = accountIndex;
 
