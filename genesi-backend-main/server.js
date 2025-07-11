@@ -90,7 +90,7 @@ app.use('/api/recurring-incomes', recurringIncomeRoutes)
 import askRoutes from './routes/ask.js';
 app.use('/api/perguntar', askRoutes);
 
-import accountRoutes from './routes/account.js';
+import accountRoutes from './routes/accounts.js';
 app.use('/api/accounts', accountRoutes);
 
 app.listen(PORT, () => {
