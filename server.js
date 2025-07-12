@@ -7,8 +7,7 @@ import { startScheduler } from './services/transactionScheduler.js';
 
 
 // Carrega variáveis de ambiente do .env
-dotenv.config(); console.log('MONGODB_URI:', process.env.MONGODB_URI);
-
+dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const api = process.env.SELF_API_URL
@@ -101,14 +100,14 @@ app.listen(PORT, () => {
   startScheduler();
 });
 
-/*const keepAlive = () => {
+const keepAlive = () => {
   axios.get(api)
     .then(() => console.log(`[KEEP-ALIVE] Ping enviado para ${api}`))
     .catch((error) => console.error('[KEEP-ALIVE] Erro ao pingar a API:', error.message));
 };
 
 // Executa o keepAlive a cada 5 minutos (300.000 ms)
-setInterval(keepAlive, 5 * 60 * 1000);*/
+setInterval(keepAlive, 5 * 60 * 1000);
 
 // =============================================
 // OBJETIVO E DESCRIÇÃO DO ARQUIVO
